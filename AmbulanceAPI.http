@@ -1,0 +1,6 @@
+@AmbulanceAPI_HostAddress = http://localhost:5049
+
+GET {{AmbulanceAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
