@@ -50,7 +50,7 @@ namespace AmbulanceAPI.Controllers
             if (signal == null) return NotFound();
 
             signal.Status = status;
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();  
             return Ok();
         }
     }

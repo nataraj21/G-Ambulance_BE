@@ -34,7 +34,81 @@ namespace AmbulanceAPI.Controllers
             _context.Ambulances.Add(model);
             await _context.SaveChangesAsync();
 
+            // Check for proximity to traffic signals
+            await CheckProximityAndNotify(model);
+
             return Ok(new { message = "Location updated successfully.", locationId = model.Id });
+        }
+
+        private async Task CheckProximityAndNotify(LocationModel ambulance)
+        {
+            const double PROXIMITY_THRESHOLD = 1.5; // 1500 meters
+            var signals = await _context.TrafficSignals.ToListAsync();
+
+            foreach (var signal in signals)
+            {
+                double distanceToSignal = GetDistance(ambulance.Latitude, ambulance.Longitude, signal.Latitude, signal.Longitude);
+
+                if (distanceToSignal <= PROXIMITY_THRESHOLD)
+                {
+                    // Check if an alert was already sent for this vehicle and signal in the last 2 minutes
+                    var recentAlert = await _context.Alerts
+                        .Where(a => a.VehicleNumber == ambulance.VehicleNumber && 
+                                    a.SignalId == signal.Id && 
+                                    a.Timestamp > DateTime.UtcNow.AddMinutes(-2))
+                        .AnyAsync();
+
+                    if (!recentAlert)
+                    {
+                        // Find the nearest officer to this signal within 1km
+                        var nearestOfficerLocation = _context.OfficerLocations
+                            .Include(o => o.Officer)
+                            .AsEnumerable()
+                            .Where(o => GetDistance(signal.Latitude, signal.Longitude, o.Latitude, o.Longitude) <= 1.0)
+                            .OrderBy(o => GetDistance(signal.Latitude, signal.Longitude, o.Latitude, o.Longitude))
+                            .FirstOrDefault();
+
+                        if (nearestOfficerLocation != null)
+                        {
+                            var alert = new Alert
+                            {
+                                OfficerId = nearestOfficerLocation.OfficerId,
+                                VehicleNumber = ambulance.VehicleNumber,
+                                SignalId = signal.Id,
+                                Message = $"Ambulance {ambulance.VehicleNumber} is approaching {signal.SignalName}.",
+                                Timestamp = DateTime.UtcNow,
+                                IsRead = false
+                            };
+
+                            _context.Alerts.Add(alert);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+        }
+
+        [HttpGet("officer-alerts/{officerId}")]
+        public async Task<IActionResult> GetOfficerAlerts(int officerId)
+        {
+            var alerts = await _context.Alerts
+                .Where(a => a.OfficerId == officerId)
+                .OrderByDescending(a => a.Timestamp)
+                .Take(20)
+                .ToListAsync();
+
+            return Ok(alerts);
+        }
+
+        [HttpPost("mark-alert-read/{alertId}")]
+        public async Task<IActionResult> MarkAlertAsRead(int alertId)
+        {
+            var alert = await _context.Alerts.FindAsync(alertId);
+            if (alert == null) return NotFound();
+
+            alert.IsRead = true;
+            await _context.SaveChangesAsync();
+            return Ok();
         }
 
         [HttpGet("all-locations")]
