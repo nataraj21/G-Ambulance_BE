@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AmbulanceAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260323051037_FixTrafficSignalsTable")]
-    partial class FixTrafficSignalsTable
+    [Migration("20260323123018_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,6 +25,43 @@ namespace AmbulanceAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("AmbulanceAPI.Models.Alert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OfficerId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SignalId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VehicleNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OfficerId");
+
+                    b.HasIndex("SignalId");
+
+                    b.ToTable("Alerts");
+                });
+
             modelBuilder.Entity("AmbulanceAPI.Models.LocationModel", b =>
                 {
                     b.Property<int>("Id")
@@ -34,24 +71,20 @@ namespace AmbulanceAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<double>("Latitude")
-                        .HasColumnType("float")
-                        .HasAnnotation("Relational:JsonPropertyName", "latitude");
+                        .HasColumnType("float");
 
                     b.Property<double>("Longitude")
-                        .HasColumnType("float")
-                        .HasAnnotation("Relational:JsonPropertyName", "longitude");
+                        .HasColumnType("float");
 
                     b.Property<double>("Speed")
-                        .HasColumnType("float")
-                        .HasAnnotation("Relational:JsonPropertyName", "speed");
+                        .HasColumnType("float");
 
                     b.Property<DateTime>("UpdatedTime")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("VehicleNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "vehicleNumber");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -115,26 +148,41 @@ namespace AmbulanceAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<double>("Latitude")
-                        .HasColumnType("float")
-                        .HasAnnotation("Relational:JsonPropertyName", "latitude");
+                        .HasColumnType("float");
 
                     b.Property<double>("Longitude")
-                        .HasColumnType("float")
-                        .HasAnnotation("Relational:JsonPropertyName", "longitude");
+                        .HasColumnType("float");
 
                     b.Property<string>("SignalName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "signalName");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasAnnotation("Relational:JsonPropertyName", "status");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
                     b.ToTable("TrafficSignals");
+                });
+
+            modelBuilder.Entity("AmbulanceAPI.Models.Alert", b =>
+                {
+                    b.HasOne("AmbulanceAPI.Models.Officer", "Officer")
+                        .WithMany()
+                        .HasForeignKey("OfficerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AmbulanceAPI.Models.SignalModel", "Signal")
+                        .WithMany()
+                        .HasForeignKey("SignalId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Officer");
+
+                    b.Navigation("Signal");
                 });
 
             modelBuilder.Entity("AmbulanceAPI.Models.OfficerLocation", b =>
