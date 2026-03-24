@@ -1,7 +1,10 @@
 using System;
+using System.Text.Json.Serialization;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace AmbulanceAPI.Models
 {
+    [Table("TrafficSignals")]
     public class SignalModel
     {
         public int Id { get; set; }
