@@ -4,6 +4,7 @@ using AmbulanceAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AmbulanceAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323095857_AddUserAuthentication")]
+    partial class AddUserAuthentication
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -37,14 +40,14 @@ namespace AmbulanceAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("OfficerId")
+                        .HasColumnType("int");
+
                     b.Property<int>("SignalId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
 
                     b.Property<string>("VehicleNumber")
                         .IsRequired()
@@ -52,9 +55,9 @@ namespace AmbulanceAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SignalId");
+                    b.HasIndex("OfficerId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("SignalId");
 
                     b.ToTable("Alerts");
                 });
@@ -88,6 +91,27 @@ namespace AmbulanceAPI.Migrations
                     b.ToTable("Ambulances");
                 });
 
+            modelBuilder.Entity("AmbulanceAPI.Models.Officer", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Officers");
+                });
+
             modelBuilder.Entity("AmbulanceAPI.Models.OfficerLocation", b =>
                 {
                     b.Property<int>("Id")
@@ -102,15 +126,15 @@ namespace AmbulanceAPI.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("float");
 
+                    b.Property<int>("OfficerId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("OfficerId");
 
                     b.ToTable("OfficerLocations");
                 });
@@ -180,38 +204,36 @@ namespace AmbulanceAPI.Migrations
 
             modelBuilder.Entity("AmbulanceAPI.Models.Alert", b =>
                 {
+                    b.HasOne("AmbulanceAPI.Models.Officer", "Officer")
+                        .WithMany()
+                        .HasForeignKey("OfficerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("AmbulanceAPI.Models.SignalModel", "Signal")
                         .WithMany()
                         .HasForeignKey("SignalId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("AmbulanceAPI.Models.User", "User")
-                        .WithMany("Alerts")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Officer");
 
                     b.Navigation("Signal");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AmbulanceAPI.Models.OfficerLocation", b =>
                 {
-                    b.HasOne("AmbulanceAPI.Models.User", "User")
+                    b.HasOne("AmbulanceAPI.Models.Officer", "Officer")
                         .WithMany("Locations")
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("OfficerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Officer");
                 });
 
-            modelBuilder.Entity("AmbulanceAPI.Models.User", b =>
+            modelBuilder.Entity("AmbulanceAPI.Models.Officer", b =>
                 {
-                    b.Navigation("Alerts");
-
                     b.Navigation("Locations");
                 });
 #pragma warning restore 612, 618
